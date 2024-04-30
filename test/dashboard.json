@@ -1,0 +1,6 @@
+{
+  "dataCube": "networkFlows",
+  "shortName": "simple_dashboard",
+  "name": "Simple dashboard that shows the power of the stack",
+  "hash": "#this_is_a_hash#"
+}

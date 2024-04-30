@@ -1,0 +1,5 @@
+fastapi==0.105.0
+uvicorn==0.25.0
+sqlalchemy-utils==0.41.1
+sqlmodel==0.0.14
+psycopg2==2.9.9
