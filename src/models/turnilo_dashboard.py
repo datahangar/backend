@@ -11,3 +11,4 @@ class TurniloDashboard(SQLModel, table=True):
     name: str
     description: Optional[str] = ""
     hash: str
+    preset: Optional[bool] = False
