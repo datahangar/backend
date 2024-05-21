@@ -1,4 +1,4 @@
-name: docker-publish-ghcr
+name: ci
 
 on:
   workflow_dispatch:
@@ -12,8 +12,32 @@ env:
   PLATFORMS: linux/amd64,linux/arm64
 
 jobs:
+  unit-test:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: "Checkout backend(REST)"
+        uses: actions/checkout@v4
+        with:
+          path: backend
+          fetch-depth: 0
+          fetch-tags: 1
+
+      - name: "Unit test"
+        run: |
+          cd backend
+
+          echo "Fix mess with tags in actions/checkout..."
+          git fetch -f && git fetch -f --tags
+
+          sudo apt-get install -y make
+          pip3 install -r requirements.txt
+
+          #Run tests
+          cd test && make test
+
   docker_build_and_publish:
     runs-on: ubuntu-22.04
+    needs: [unit-test]
     steps:
       - name: "Checkout backend(REST)"
         uses: actions/checkout@v4
