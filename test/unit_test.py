@@ -1,0 +1,153 @@
+import threading, time, json, signal
+import pytest
+
+import uvicorn
+from fastapi import FastAPI
+
+#REST API routes
+from routes import routes
+
+#Python Client (test it too)
+from client import create_dashboard, get_dashboard, update_dashboard, delete_dashboard
+from typing import Generator, Any
+
+HOST="127.0.0.1"
+PORT=8080
+
+@pytest.fixture(scope="module")
+def sample_dashboard():
+    return {
+        "dataCube": "networkFlows",
+        "shortName": "simple_dashboard",
+        "name": "Simple dashboard that shows the power of the stack",
+        "hash": "<hash>"
+    }
+
+@pytest.fixture(scope="session", autouse=True)
+def rest_server() -> Generator[None, Any, None]:
+    app = FastAPI()
+    app.include_router(routes.api_router)
+    c = uvicorn.Config(app, host=HOST, port=PORT)
+    server = uvicorn.Server(c)
+    t = threading.Thread(target=server.run)
+    t.start()
+    time.sleep(3)
+    yield
+    server.handle_exit(signal.SIGINT, None)
+    t.join()
+
+@pytest.mark.parametrize("with_optional_fields", [True, False])
+def test_create_dashboard(sample_dashboard, with_optional_fields):
+    dashboard = sample_dashboard.copy()
+    if with_optional_fields:
+        dashboard["preset"] = True
+        dashboard["description"] = "This is a description"
+    dashboard["id"] = 999
+
+    #Setting the ID should fail
+    res = create_dashboard(HOST, PORT, json.dumps(dashboard))
+    assert res.status_code == 400
+
+    #Create the dashboard
+    dashboard.pop("id", None)
+    res = create_dashboard(HOST, PORT, json.dumps(dashboard))
+    got = res.json()
+
+    #Create should populate the id, and set {preset=False, description=""}
+    dashboard["id"] = 1
+    if not with_optional_fields:
+        dashboard["preset"] = False
+        dashboard["description"] = ""
+    print(f"EXPECTED:\n{dashboard}")
+    print(f"GOT:\n{got}")
+    assert got == dashboard
+
+    #Cleanup
+    res = delete_dashboard(HOST, PORT, 1)
+    assert res.status_code == 200
+
+def test_get_all_dashboards(sample_dashboard):
+    res = get_dashboard(HOST, PORT)
+    assert res.json() == []
+
+    #Create two dashboards
+    dashboard = sample_dashboard.copy()
+    res = create_dashboard(HOST, PORT, json.dumps(dashboard))
+    assert res.json()["id"] == 1
+
+    dashboard = sample_dashboard.copy()
+    dashboard["dataCube"] = "myDatacube"
+    dashboard["shortName"] = "shortName"
+    res = create_dashboard(HOST, PORT, json.dumps(dashboard))
+    assert res.json()["id"] == 2
+
+    #Get both
+    res = get_dashboard(HOST, PORT)
+    dashs = res.json()
+    assert len(dashs) == 2
+    for dash in dashs:
+        assert dash["id"] == 1 or dash["id"] == 2
+        if dash["id"] == 1:
+            assert dash["dataCube"] == "networkFlows"
+        elif dash["id"] == 2:
+            assert dash["dataCube"] == "myDatacube"
+
+    #Cleanup
+    res = delete_dashboard(HOST, PORT, 1)
+    assert res.status_code == 200
+    res = delete_dashboard(HOST, PORT, 2)
+    assert res.status_code == 200
+
+def test_update_dashboard(sample_dashboard):
+    dashboard = sample_dashboard.copy()
+
+    #Create dashboard
+    res = create_dashboard(HOST, PORT, json.dumps(dashboard))
+    got = res.json()
+    dashboard["description"] = ""
+    dashboard["preset"] = False
+    dashboard["id"] = 1
+
+    print(f"EXPECTED:\n{dashboard}")
+    print(f"GOT:\n{got}")
+    assert got == dashboard
+
+    dashboard["name"] = "Updated Dashboard Name"
+    res = update_dashboard(HOST, PORT, json.dumps(dashboard), 1)
+    assert res.status_code == 200
+
+    res = get_dashboard(HOST, PORT, 1)
+    got = res.json()
+    print(f"EXPECTED:\n{dashboard}")
+    print(f"GOT:\n{got}")
+    assert got == dashboard
+
+    #Cleanup
+    res = delete_dashboard(HOST, PORT, 1)
+    assert res.status_code == 200
+
+def test_delete_dashboard(sample_dashboard):
+    dashboard = sample_dashboard.copy()
+
+    #Create dashboard
+    res = create_dashboard(HOST, PORT, json.dumps(dashboard))
+    got = res.json()
+    dashboard["description"] = ""
+    dashboard["preset"] = False
+    dashboard["id"] = 1
+
+    print(f"EXPECTED:\n{dashboard}")
+    print(f"GOT:\n{got}")
+    assert got == dashboard
+
+    #Delete an inexistent Dashbaord
+    res = delete_dashboard(HOST, PORT, 99)
+    assert res.status_code == 404
+
+    #Cleanup
+    res = delete_dashboard(HOST, PORT, 1)
+    assert res.status_code == 200
+
+    #100% dead
+    res = delete_dashboard(HOST, PORT, 1)
+    assert res.status_code == 404

@@ -4,7 +4,7 @@ WORKDIR /
 
 #First install deps
 RUN apt-get update && apt-get install -y gcc libpq-dev
-COPY ./src/requirements.txt /
+COPY ./requirements.txt /
 RUN pip install --no-cache-dir --upgrade -r /requirements.txt
 
 #Cleanup
