@@ -12,6 +12,54 @@ env:
   PLATFORMS: linux/amd64,linux/arm64
 
 jobs:
+  lint: 
+    runs-on: ubuntu-22.04
+    steps:
+      - name: "Checkout backend(REST)"
+        uses: actions/checkout@v4
+        with:
+          path: backend
+          fetch-depth: 0
+          fetch-tags: 1
+
+      - name: "lint"
+        run: |
+          cd backend
+
+          echo "Fix mess with tags in actions/checkout..."
+          git fetch -f && git fetch -f --tags
+
+          sudo apt-get install -y make
+          pip3 install -r requirements.txt
+          pip3 install -r requirements-dev.txt
+
+          #Run linter
+          make lint
+  
+  format:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: "Checkout backend(REST)"
+        uses: actions/checkout@v4
+        with:
+          path: backend
+          fetch-depth: 0
+          fetch-tags: 1
+
+      - name: "format"
+        run: |
+          cd backend
+
+          echo "Fix mess with tags in actions/checkout..."
+          git fetch -f && git fetch -f --tags
+
+          sudo apt-get install -y make
+          pip3 install -r requirements.txt
+          pip3 install -r requirements-dev.txt
+
+          #Run formatter
+          AUTOPEP8_EXIT_CODE=--exit-code make format-code
+
   unit-test:
     runs-on: ubuntu-22.04
     steps:
@@ -37,7 +85,7 @@ jobs:
 
   docker_build_and_publish:
     runs-on: ubuntu-22.04
-    needs: [unit-test]
+    needs: [unit-test, format, lint]
     steps:
       - name: "Checkout backend(REST)"
         uses: actions/checkout@v4
