@@ -1,3 +1,6 @@
+AUTOPEP8_OPTS ?= --in-place --recursive --aggressive
+AUTOPEP8_EXIT_CODE ?=
+
 all: start
 
 start: _build _run
@@ -10,3 +13,8 @@ stop:
 	@docker kill rest_backend || true
 	@docker rm rest_backend || true
 reload: stop start
+format-code:
+	autopep8 $(AUTOPEP8_OPTS) $(AUTOPEP8_EXIT_CODE) ./
+lint:
+	flake8 ./
+	mypy ./
