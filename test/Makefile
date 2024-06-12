@@ -3,4 +3,4 @@
 test:
 	@rm -rf data/ || true
 	@mkdir -p data
-	@PYTHONPATH=`pwd`/../src/ pytest -v -s
+	@PYTHONPATH=`pwd`/../src/ pytest -Werror -v -s
