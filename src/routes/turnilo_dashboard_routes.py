@@ -1,7 +1,7 @@
 import re
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List
-from sqlalchemy.orm import Session
+from sqlmodel import Session
 from models.turnilo_dashboard import TurniloDashboard
 from services import turnilo_dashboards as td
 
