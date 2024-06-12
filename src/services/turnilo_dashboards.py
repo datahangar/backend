@@ -1,5 +1,5 @@
 from typing import List
-from sqlalchemy.orm import Session
+from sqlmodel import Session, select
 from sqlalchemy import exc
 from models.turnilo_dashboard import TurniloDashboard
 from fastapi import HTTPException
@@ -8,12 +8,12 @@ from fastapi import HTTPException
 
 
 def dashboards_get_all(session: Session, shortName: str, dataCube: str) -> List[TurniloDashboard]:
-    query = session.query(TurniloDashboard)
+    statement = select(TurniloDashboard)
     if shortName:
-        query = query.filter(TurniloDashboard.shortName == shortName)
+        statement = statement.where(TurniloDashboard.shortName == shortName)
     if dataCube:
-        query = query.filter(TurniloDashboard.dataCube == dataCube)
-    return query.all()
+        statement = statement.where(TurniloDashboard.dataCube == dataCube)
+    return list(session.exec(statement).all())
 
 
 def _dashboards_return_single_obj(results: List[TurniloDashboard]):
@@ -25,7 +25,8 @@ def _dashboards_return_single_obj(results: List[TurniloDashboard]):
 
 
 def dashboards_get_id(session: Session, _id: int) -> TurniloDashboard:
-    results: List[TurniloDashboard] = session.query(TurniloDashboard).filter_by(id=_id).all()
+    statement = select(TurniloDashboard).where(TurniloDashboard.id == _id)
+    results: List[TurniloDashboard] = list(session.exec(statement).all())
     return _dashboards_return_single_obj(results)
 
 
@@ -67,7 +68,8 @@ def dashboards_update(session: Session, dashboard: TurniloDashboard) -> TurniloD
 def dashboards_delete(session: Session, _id: int) -> TurniloDashboard:
     dashboard = None
     try:
-        dashboard = session.query(TurniloDashboard).filter_by(id=_id).one()
+        statement = select(TurniloDashboard).where(TurniloDashboard.id == _id)
+        dashboard = session.exec(statement).one()
     except BaseException:
         pass
     if dashboard is None:
