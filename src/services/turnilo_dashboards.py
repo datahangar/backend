@@ -7,8 +7,13 @@ from fastapi import HTTPException
 # Turnilo Dashboards
 
 
-def dashboards_get_all(session: Session) -> List[TurniloDashboard]:
-    return session.query(TurniloDashboard).all()
+def dashboards_get_all(session: Session, shortName: str, dataCube: str) -> List[TurniloDashboard]:
+    query = session.query(TurniloDashboard)
+    if shortName:
+        query = query.filter(TurniloDashboard.shortName == shortName)
+    if dataCube:
+        query = query.filter(TurniloDashboard.dataCube == dataCube)
+    return query.all()
 
 
 def _dashboards_return_single_obj(results: List[TurniloDashboard]):

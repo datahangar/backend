@@ -106,6 +106,105 @@ def test_get_all_dashboards(sample_dashboard: dict[str, Any]) -> None:
     assert res.status_code == 200
 
 
+def test_get_all_dashboards_query_params(sample_dashboard: dict[str, Any]) -> None:
+    res = get_dashboard(HOST, PORT)
+    assert res.json() == []
+
+    # Create two dashboards
+    dashboard = sample_dashboard.copy()
+    res = create_dashboard(HOST, PORT, json.dumps(dashboard))
+    assert res.json()["id"] == 1
+
+    dashboard = sample_dashboard.copy()
+    dashboard["dataCube"] = "myDatacube"
+    dashboard["shortName"] = "shortName"
+    res = create_dashboard(HOST, PORT, json.dumps(dashboard))
+    assert res.json()["id"] == 2
+
+    # Try with invalid query params
+    res = get_dashboard(HOST, PORT, shortName=" ")
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, dataCube=" ")
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, shortName="name;test")
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, dataCube="name;test")
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, shortName="name?test")
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, dataCube="name?test")
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, shortName="name'test")
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, dataCube="name'test")
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, shortName="name\"test")
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, dataCube="name\"test")
+    assert res.status_code == 400
+    long_name = 's' * 280
+    res = get_dashboard(HOST, PORT, shortName=long_name)
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, dataCube=long_name)
+    assert res.status_code == 400
+
+    # Now validate functionality
+
+    # Name only
+    res = get_dashboard(HOST, PORT, shortName="simple_dashboard")
+    assert res.status_code == 200
+    assert len(res.json()) == 1
+    assert res.json()[0]["id"] == 1
+    res = get_dashboard(HOST, PORT, shortName="shortName")
+    assert res.status_code == 200
+    assert len(res.json()) == 1
+    assert res.json()[0]["id"] == 2
+    res = get_dashboard(HOST, PORT, shortName="shortNameA")
+    assert res.status_code == 200
+    assert len(res.json()) == 0
+    res = get_dashboard(HOST, PORT, shortName="shortName2")
+    assert res.status_code == 200
+    assert len(res.json()) == 0
+
+    # DataCube only
+    res = get_dashboard(HOST, PORT, dataCube="networkFlows")
+    assert res.status_code == 200
+    assert len(res.json()) == 1
+    assert res.json()[0]["id"] == 1
+    res = get_dashboard(HOST, PORT, dataCube="myDatacube")
+    assert res.status_code == 200
+    assert len(res.json()) == 1
+    assert res.json()[0]["id"] == 2
+    res = get_dashboard(HOST, PORT, dataCube="networkFlowsA")
+    assert res.status_code == 200
+    assert len(res.json()) == 0
+    res = get_dashboard(HOST, PORT, dataCube="networkFlows2")
+    assert res.status_code == 200
+    assert len(res.json()) == 0
+
+    # Both
+    res = get_dashboard(HOST, PORT, dataCube="networkFlows", shortName="simple_dashboard")
+    assert res.status_code == 200
+    assert len(res.json()) == 1
+    assert res.json()[0]["id"] == 1
+    res = get_dashboard(HOST, PORT, dataCube="myDatacube", shortName="shortName")
+    assert res.status_code == 200
+    assert len(res.json()) == 1
+    assert res.json()[0]["id"] == 2
+    res = get_dashboard(HOST, PORT, dataCube="networkFlowsA", shortName="shortNameA")
+    assert res.status_code == 200
+    assert len(res.json()) == 0
+    res = get_dashboard(HOST, PORT, dataCube="networkFlows2", shortName="shortName2")
+    assert res.status_code == 200
+    assert len(res.json()) == 0
+
+    # Cleanup
+    res = delete_dashboard(HOST, PORT, 1)
+    assert res.status_code == 200
+    res = delete_dashboard(HOST, PORT, 2)
+    assert res.status_code == 200
+
+
 def test_update_dashboard(sample_dashboard: dict[str, Any]) -> None:
     dashboard = sample_dashboard.copy()
 
