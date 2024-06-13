@@ -1,5 +1,4 @@
-import re
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from sqlmodel import Session
 from models.turnilo_dashboard import TurniloDashboard
@@ -13,27 +12,15 @@ turnilo_router = APIRouter()
 ### Dashboards ###
 
 
-def is_valid_query(s: str) -> bool:
-    if not isinstance(s, str):
-        return False
-    if len(s) > 256:
-        return False
-    pattern = r'^[a-zA-Z0-9_-]+$'
-    return bool(re.match(pattern, s))
-
-
 @turnilo_router.get(
     constants.URL_PATH + "/turnilo/dashboards/",
     response_model=List[TurniloDashboard],
     summary="Gets all Turnilo dashboards"
 )
 def turnilo_get_dashboards(db_session: Session = Depends(db.get_session),
-                           shortName: str = Query(None), dataCube: str = Query(None)):
-    if shortName and not is_valid_query(shortName):
-        raise HTTPException(status_code=400, detail=f"Invalid shortName='{shortName}'")
-    if dataCube and not is_valid_query(dataCube):
-        raise HTTPException(status_code=400, detail=f"Invalid dataCube='{dataCube}'")
-    return td.dashboards_get_all(db_session, shortName, dataCube)
+                           query_params: td.GetQueryParams = Depends()):
+    query_params.validate()
+    return td.dashboards_get_all(db_session, query_params)
 
 
 @turnilo_router.get(

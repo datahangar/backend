@@ -1,5 +1,7 @@
-from typing import List
+import re
+from typing import List, Optional
 from sqlmodel import Session, select
+from pydantic import BaseModel, Field
 from sqlalchemy import exc
 from models.turnilo_dashboard import TurniloDashboard
 from fastapi import HTTPException
@@ -7,12 +9,32 @@ from fastapi import HTTPException
 # Turnilo Dashboards
 
 
-def dashboards_get_all(session: Session, shortName: str, dataCube: str) -> List[TurniloDashboard]:
+class GetQueryParams(BaseModel):
+    """
+    Get query filtering params
+    """
+    shortName: Optional[str] = Field(default=None, description="Dashboard's shortName")
+    dataCube: Optional[str] = Field(default=None, description="Dashboard's dataCube")
+
+    def is_valid_param(self, s: str) -> bool:
+        if len(s) > 256:
+            return False
+        pattern = r'^[a-zA-Z0-9_-]+$'
+        return bool(re.match(pattern, s))
+
+    def validate(self):
+        if self.shortName and not self.is_valid_param(self.shortName):
+            raise HTTPException(status_code=400, detail=f"Invalid shortName='{self.shortName}'")
+        if self.dataCube and not self.is_valid_param(self.dataCube):
+            raise HTTPException(status_code=400, detail=f"Invalid dataCube='{self.dataCube}'")
+
+
+def dashboards_get_all(session: Session, query_params: GetQueryParams) -> List[TurniloDashboard]:
     statement = select(TurniloDashboard)
-    if shortName:
-        statement = statement.where(TurniloDashboard.shortName == shortName)
-    if dataCube:
-        statement = statement.where(TurniloDashboard.dataCube == dataCube)
+    if query_params.shortName:
+        statement = statement.where(TurniloDashboard.shortName == query_params.shortName)
+    if query_params.dataCube:
+        statement = statement.where(TurniloDashboard.dataCube == query_params.dataCube)
     return list(session.exec(statement).all())
 
 
