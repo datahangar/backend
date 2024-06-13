@@ -1,8 +1,10 @@
 from typing import Any, Generator
 from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy_utils import database_exists, create_database
+from sqlalchemy.ext.declarative import declarative_base
 import constants
 
+Base = declarative_base()
 
 def create_tables(db_engine) -> None:
     from models.turnilo_dashboard import TurniloDashboard
