@@ -15,3 +15,8 @@ POSTGRES_PASSWORD = "test"
 
 # API
 URL_PATH = "/rest"
+
+# AUTHENTICATION :TODO - Move to a separate file
+SECRET_KEY = "mysecretkey"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30

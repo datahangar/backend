@@ -6,6 +6,7 @@ import constants
 
 Base = declarative_base()
 
+
 def create_tables(db_engine) -> None:
     from models.turnilo_dashboard import TurniloDashboard
     SQLModel.metadata.create_all(db_engine, tables=[TurniloDashboard.__table__])
