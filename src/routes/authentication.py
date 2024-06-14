@@ -4,7 +4,6 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from passlib.context import CryptContext
-from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from authlib.integrations.starlette_client import OAuth
 from starlette.config import Config as StarletteConfig
