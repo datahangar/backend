@@ -1,5 +1,7 @@
-from typing import List
-from sqlalchemy.orm import Session
+import re
+from typing import List, Optional
+from sqlmodel import Session, select
+from pydantic import BaseModel, Field
 from sqlalchemy import exc
 from models.turnilo_dashboard import TurniloDashboard
 from fastapi import HTTPException
@@ -7,8 +9,33 @@ from fastapi import HTTPException
 # Turnilo Dashboards
 
 
-def dashboards_get_all(session: Session) -> List[TurniloDashboard]:
-    return session.query(TurniloDashboard).all()
+class GetQueryParams(BaseModel):
+    """
+    Get query filtering params
+    """
+    shortName: Optional[str] = Field(default=None, description="Dashboard's shortName")
+    dataCube: Optional[str] = Field(default=None, description="Dashboard's dataCube")
+
+    def is_valid_param(self, s: str) -> bool:
+        if len(s) > 256:
+            return False
+        pattern = r'^[a-zA-Z0-9_-]+$'
+        return bool(re.match(pattern, s))
+
+    def validate(self):
+        if self.shortName and not self.is_valid_param(self.shortName):
+            raise HTTPException(status_code=400, detail=f"Invalid shortName='{self.shortName}'")
+        if self.dataCube and not self.is_valid_param(self.dataCube):
+            raise HTTPException(status_code=400, detail=f"Invalid dataCube='{self.dataCube}'")
+
+
+def dashboards_get_all(session: Session, query_params: GetQueryParams) -> List[TurniloDashboard]:
+    statement = select(TurniloDashboard)
+    if query_params.shortName:
+        statement = statement.where(TurniloDashboard.shortName == query_params.shortName)
+    if query_params.dataCube:
+        statement = statement.where(TurniloDashboard.dataCube == query_params.dataCube)
+    return list(session.exec(statement).all())
 
 
 def _dashboards_return_single_obj(results: List[TurniloDashboard]):
@@ -20,7 +47,8 @@ def _dashboards_return_single_obj(results: List[TurniloDashboard]):
 
 
 def dashboards_get_id(session: Session, _id: int) -> TurniloDashboard:
-    results: List[TurniloDashboard] = session.query(TurniloDashboard).filter_by(id=_id).all()
+    statement = select(TurniloDashboard).where(TurniloDashboard.id == _id)
+    results: List[TurniloDashboard] = list(session.exec(statement).all())
     return _dashboards_return_single_obj(results)
 
 
@@ -62,7 +90,8 @@ def dashboards_update(session: Session, dashboard: TurniloDashboard) -> TurniloD
 def dashboards_delete(session: Session, _id: int) -> TurniloDashboard:
     dashboard = None
     try:
-        dashboard = session.query(TurniloDashboard).filter_by(id=_id).one()
+        statement = select(TurniloDashboard).where(TurniloDashboard.id == _id)
+        dashboard = session.exec(statement).one()
     except BaseException:
         pass
     if dashboard is None:

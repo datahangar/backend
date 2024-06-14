@@ -3,6 +3,7 @@ import sys
 import json
 import requests
 import argparse
+from urllib.parse import urlencode
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8080
@@ -32,11 +33,18 @@ def delete_dashboard(host, port, dashboard_id) -> requests.Response:
     return response
 
 
-def get_dashboard(host, port, dashboard_id=None) -> requests.Response:
+def get_dashboard(host, port, dashboard_id=None, shortName=None, dataCube=None) -> requests.Response:
     if dashboard_id:
         url = f"http://{host}:{port}/{DEFAULT_PATH}/{dashboard_id}"
     else:
-        url = f"http://{host}:{port}/{DEFAULT_PATH}"
+        query = {}
+        if shortName:
+            query["shortName"] = shortName
+        if dataCube:
+            query["dataCube"] = dataCube
+        query_str = urlencode(query)
+        query_str = "?" + query_str if query_str != "" else ""
+        url = f"http://{host}:{port}/{DEFAULT_PATH}{query_str}"
     response = requests.get(url)
     print_response(response)
     return response
