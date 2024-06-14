@@ -130,7 +130,9 @@ def test_get_all_dashboards_query_params(sample_dashboard: dict[str, Any]) -> No
     assert res.status_code == 400
     res = get_dashboard(HOST, PORT, dataCube="name;test")
     assert res.status_code == 400
-    res = get_dashboard(HOST, PORT, shortName="name?test")
+    res = get_dashboard(HOST, PORT, dataCube="name:test")
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, shortName="name:test")
     assert res.status_code == 400
     res = get_dashboard(HOST, PORT, dataCube="name?test")
     assert res.status_code == 400
@@ -142,11 +144,27 @@ def test_get_all_dashboards_query_params(sample_dashboard: dict[str, Any]) -> No
     assert res.status_code == 400
     res = get_dashboard(HOST, PORT, dataCube="name\"test")
     assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, shortName="name/test")
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, dataCube="name/test")
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, shortName="name?test")
+    assert res.status_code == 400
+    res = get_dashboard(HOST, PORT, dataCube="name?test")
+    assert res.status_code == 400
+
+    # Invalid length
     long_name = 's' * 280
     res = get_dashboard(HOST, PORT, shortName=long_name)
     assert res.status_code == 400
     res = get_dashboard(HOST, PORT, dataCube=long_name)
     assert res.status_code == 400
+
+    # Make sure -,_. is allowed
+    res = get_dashboard(HOST, PORT, shortName="name.test_hello-2")
+    assert res.status_code == 200
+    res = get_dashboard(HOST, PORT, dataCube="name.test_hello-2")
+    assert res.status_code == 200
 
     # Now validate functionality
 

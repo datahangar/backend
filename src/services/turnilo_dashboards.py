@@ -19,7 +19,7 @@ class GetQueryParams(BaseModel):
     def is_valid_param(self, s: str) -> bool:
         if len(s) > 256:
             return False
-        pattern = r'^[a-zA-Z0-9_-]+$'
+        pattern = r'^[a-zA-Z0-9_.-]+$'
         return bool(re.match(pattern, s))
 
     def validate(self):
